@@ -3,5 +3,5 @@ A sample command-line application providing basic argument parsing with an entry
 
 # installation
 ```sh
-dart pub global activate --source path ../../l10n_cli
+dart pub global activate --source path ../
 ```

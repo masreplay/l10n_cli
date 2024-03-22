@@ -1,9 +1,11 @@
 import 'package:args/args.dart';
 
+import 'l10n_init.dart';
 import 'version.dart';
 
 const String helpFlag = 'help';
 const String sortFlag = 'sort';
+const String initFlag = 'init';
 const String verboseFlag = 'verbose';
 const String versionFlag = 'version';
 
@@ -26,6 +28,12 @@ ArgParser buildParser() {
       abbr: 's',
       negatable: false,
       help: 'Sort the output.',
+    )
+    ..addFlag(
+      initFlag,
+      abbr: 'i',
+      negatable: false,
+      help: 'Initialize the l10n tool.',
     )
     ..addFlag(
       versionFlag,
@@ -56,6 +64,9 @@ void main(List<String> arguments) {
       verbose = true;
     } else if (results.wasParsed(sortFlag)) {
       // TODO(masreplay): Implement sort functionality.
+    } else if (results.wasParsed(initFlag)) {
+      
+      l10nInit();
     }
 
     // // Act on the arguments provided.
