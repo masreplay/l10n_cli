@@ -1,10 +1,12 @@
 import 'package:args/args.dart';
 
 import 'l10n_init.dart';
+import 'unused.dart';
 import 'version.dart';
 
 const String helpFlag = 'help';
 const String sortFlag = 'sort';
+const String unusedFlag = 'unusedFlag';
 const String initFlag = 'init';
 const String verboseFlag = 'verbose';
 const String versionFlag = 'version';
@@ -28,6 +30,12 @@ ArgParser buildParser() {
       abbr: 's',
       negatable: false,
       help: 'Sort the output.',
+    )
+    ..addFlag(
+      unusedFlag,
+      abbr: 'u',
+      negatable: false,
+      help: 'Find unused translations.',
     )
     ..addFlag(
       initFlag,
@@ -65,8 +73,10 @@ void main(List<String> arguments) {
     } else if (results.wasParsed(sortFlag)) {
       // TODO(masreplay): Implement sort functionality.
     } else if (results.wasParsed(initFlag)) {
-      
-      l10nInit();
+      initL10nCommand();
+    } else if (results.wasParsed(unusedFlag)) {
+      final delete = results['delete'] as bool;
+      unusedTranslationsCommand(delete);
     }
 
     // // Act on the arguments provided.

@@ -6,41 +6,55 @@ import "dart:io";
 import "package:glob/glob.dart";
 import "package:glob/list_local_fs.dart";
 
-void main() {
+Future<void> unusedTranslationsCommand(bool delete) async {
   final root = Directory.current.path;
   final rootPosix = root.replaceAll("\\", "/");
 
-  final stringKeys = getStringKeys(rootPosix);
-  final dartFiles = getDartFiles(rootPosix);
+  final stringKeys = await _getStringKeys(rootPosix);
+  final dartFiles = await _getDartFiles(rootPosix);
 
-  final unusedStringKeys = findUnusedStringKeys(stringKeys, dartFiles);
-  writeUnusedFile(unusedStringKeys);
+  final unusedStringKeys = await _findUnusedStringKeys(stringKeys, dartFiles);
 
-  // delete directly if --delete flag is passed
-  if (Platform.environment.containsKey("delete")) {
-    for (final file in dartFiles) {
-      final content = File(file).readAsStringSync();
-      for (final stringKey in unusedStringKeys) {
-        if (content.contains(".$stringKey")) {
-          final newContent = content.replaceAll(".$stringKey", "");
-          File(file).writeAsStringSync(newContent);
-        }
-      }
-    }
+  _writeUnusedKeysAsFile(unusedStringKeys);
+
+  if (delete) {
+    print("Deleting unused string keys...");
+    _deleteUnusedStringKeys(unusedStringKeys, rootPosix);
   }
 }
 
-Set<String> getStringKeys(String path) {
+Future<void> _deleteUnusedStringKeys(
+  Set<String> unusedStringKeys,
+  String rootPosix,
+) async {
+  final arbFilesGlob = Glob("$rootPosix/**.arb");
+
+  await for (var entity in arbFilesGlob.list(followLinks: false)) {
+    final arbFile = entity.path;
+    final content = await File(arbFile).readAsString();
+    final map = jsonDecode(content) as Map<String, dynamic>;
+    for (final stringKey in unusedStringKeys) {
+      map.remove(stringKey);
+    }
+
+    final sink = File(arbFile).openWrite();
+    sink.write(JsonEncoder.withIndent("  ").convert(map));
+    await sink.flush();
+    await sink.close();
+  }
+}
+
+Future<Set<String>> _getStringKeys(String path) async {
   final arbFilesGlob = Glob("$path/**.arb");
 
   final arbFiles = <String>[];
-  for (var entity in arbFilesGlob.listSync(followLinks: false)) {
+  await for (var entity in arbFilesGlob.list(followLinks: false)) {
     arbFiles.add(entity.path);
   }
 
   final stringKeys = <String>{};
   for (final file in arbFiles) {
-    final content = File(file).readAsStringSync();
+    final content = await File(file).readAsString();
     final map = jsonDecode(content) as Map<String, dynamic>;
     for (final entry in map.entries) {
       if (!entry.key.startsWith("@")) {
@@ -52,17 +66,17 @@ Set<String> getStringKeys(String path) {
   return stringKeys;
 }
 
-List<String> getDartFiles(String path) {
+Future<List<String>> _getDartFiles(String path) async {
   final dartFilesGlob = Glob("$path/lib/**.dart");
   final dartFilesExcludeGlob = Glob("$path/lib/generated/**.dart");
 
   final dartFilesExclude = <String>[];
-  for (var entity in dartFilesExcludeGlob.listSync(followLinks: false)) {
+  await for (var entity in dartFilesExcludeGlob.list(followLinks: false)) {
     dartFilesExclude.add(entity.path);
   }
 
   final dartFiles = <String>[];
-  for (var entity in dartFilesGlob.listSync(followLinks: false)) {
+  await for (var entity in dartFilesGlob.list(followLinks: false)) {
     if (!dartFilesExclude.contains(entity.path)) {
       dartFiles.add(entity.path);
     }
@@ -71,11 +85,14 @@ List<String> getDartFiles(String path) {
   return dartFiles;
 }
 
-Set<String> findUnusedStringKeys(Set<String> stringKeys, List<String> files) {
+Future<Set<String>> _findUnusedStringKeys(
+  Set<String> stringKeys,
+  List<String> files,
+) async {
   final unusedStringKeys = stringKeys.toSet();
 
   for (final file in files) {
-    final content = File(file).readAsStringSync();
+    final content = await File(file).readAsString();
     for (final stringKey in stringKeys) {
       if (content.contains(".$stringKey")) {
         unusedStringKeys.remove(stringKey);
@@ -94,7 +111,7 @@ Set<String> findUnusedStringKeys(Set<String> stringKeys, List<String> files) {
 ///   ]
 /// }
 ///
-Future<void> writeUnusedFile(Set<String> unusedStringKeys) async {
+Future<void> _writeUnusedKeysAsFile(Set<String> unusedStringKeys) async {
   final file = File("unused-messages-file.json");
   final sink = file.openWrite();
   sink.write(JsonEncoder.withIndent("  ").convert(unusedStringKeys.toList()));
