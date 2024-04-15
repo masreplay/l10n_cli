@@ -12,10 +12,21 @@ void main() {
 
   final stringKeys = getStringKeys(rootPosix);
   final dartFiles = getDartFiles(rootPosix);
+
   final unusedStringKeys = findUnusedStringKeys(stringKeys, dartFiles);
-  for (final stringKey in unusedStringKeys) {
-    // ignore: avoid_print
-    print(stringKey);
+  writeUnusedFile(unusedStringKeys);
+
+  // delete directly if --delete flag is passed
+  if (Platform.environment.containsKey("delete")) {
+    for (final file in dartFiles) {
+      final content = File(file).readAsStringSync();
+      for (final stringKey in unusedStringKeys) {
+        if (content.contains(".$stringKey")) {
+          final newContent = content.replaceAll(".$stringKey", "");
+          File(file).writeAsStringSync(newContent);
+        }
+      }
+    }
   }
 }
 
@@ -73,4 +84,20 @@ Set<String> findUnusedStringKeys(Set<String> stringKeys, List<String> files) {
   }
 
   return unusedStringKeys;
+}
+
+/// unused-messages-file.json
+/// {
+///   [
+///    "stringKey1",
+///    "stringKey2",
+///   ]
+/// }
+///
+Future<void> writeUnusedFile(Set<String> unusedStringKeys) async {
+  final file = File("unused-messages-file.json");
+  final sink = file.openWrite();
+  sink.write(JsonEncoder.withIndent("  ").convert(unusedStringKeys.toList()));
+  await sink.flush();
+  await sink.close();
 }
