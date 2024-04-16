@@ -7,9 +7,7 @@ import 'dart:io';
 
 import 'package:yaml/yaml.dart';
 
-void main() {
-  // read "arb-dir" from yaml ./l10n.yaml
-
+sortArbFileAlphabetically() async {
   final arbDirKey = 'arb-dir';
 
   final yamlFile = File('l10n.yaml');
@@ -30,8 +28,6 @@ void main() {
 
   final arbDir = yamlMap[arbDirKey];
 
-  // sort all arb files in arb-dir
-
   final dir = Directory(arbDir);
 
   if (!dir.existsSync()) {
@@ -45,13 +41,11 @@ void main() {
   });
 
   for (final file in arbFiles) {
-    sortFile(file.path);
+    await _sortFile(file.path);
   }
-
-  print('Done');
 }
 
-Future<void> sortFile(String path) async {
+Future<void> _sortFile(String path) async {
   final content = File(path);
 
   final Map<String, dynamic> map = json.decode(await content.readAsString());

@@ -15,11 +15,11 @@ Future<void> unusedTranslationsCommand(bool delete) async {
 
   final unusedStringKeys = await _findUnusedStringKeys(stringKeys, dartFiles);
 
-  _writeUnusedKeysAsFile(unusedStringKeys);
+  await _writeUnusedKeysAsFile(unusedStringKeys);
 
   if (delete) {
     print("Deleting unused string keys...");
-    _deleteUnusedStringKeys(unusedStringKeys, rootPosix);
+    await _deleteUnusedStringKeys(unusedStringKeys, rootPosix);
   }
 }
 

@@ -4,7 +4,7 @@ import '../l10n_paths.dart';
 import '../l10n_template.dart';
 import '../pubspec_l10n_config.dart';
 
-void configureL10n(L10nConfig config) {
+Future<void> configureL10n(L10nConfig config) async {
   if (!config.isFlutterProject) {
     print("This is not a Flutter project");
     return;
@@ -13,20 +13,20 @@ void configureL10n(L10nConfig config) {
   if (!config.intlPackageExists) {
     // add intl
     print("Adding intl package to the pubspec.yaml file");
-    _addIntlDependency();
+    await _addIntlDependency();
     print("intl package added to the pubspec.yaml file");
   }
 
   if (config.generate == null) {
     // add flutter generate: true
     print("Adding flutter generate: true to the pubspec.yaml file");
-    _addFlutterGenerateTrue();
+    await _addFlutterGenerateTrue();
     print("flutter generate: true added to the pubspec.yaml file");
   }
 
   if (!config.l10nYamlFileExists) {
     print("Creating l10n.yaml file");
-    _createL10nYamlFile();
+    await _createL10nYamlFile();
     print("l10n.yaml file created");
   }
 }

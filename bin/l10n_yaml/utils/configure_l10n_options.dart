@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:path/path.dart' as path;
 
 import '../l10n_options.dart';
+import '../l10n_template.dart';
 
 // arbDir
 // outputDir
@@ -24,7 +25,7 @@ import '../l10n_options.dart';
 // relaxSyntax
 // useNamedParameters
 
-void configureL10nOptions(LocalizationOptions options) {
+Future<void> configureL10nOptions(LocalizationOptions options) async {
   final arbDir = Directory(options.arbDir);
   print("${LocalizationOptions.arbDirKey}: ${options.arbDir}");
   if (arbDir.existsSync()) {
@@ -40,13 +41,12 @@ void configureL10nOptions(LocalizationOptions options) {
   print(
       "${LocalizationOptions.templateArbFileKey}: ${options.templateArbFile}");
   if (templateArbFile.existsSync()) {
-    if (templateArbFile.lengthSync() == 0) {
+    if ((await templateArbFile.length()) == 0) {
       print("template arb file is empty");
-      templateArbFile.writeAsStringSync("{}");
+      templateArbFile.writeAsStringSync(l10nYamlTemplate);
     } else {
       print("template arb file found");
     }
-    print("template arb file found");
   } else {
     print("template arb file not found");
     templateArbFile.createSync();

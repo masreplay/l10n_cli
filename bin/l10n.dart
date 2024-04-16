@@ -1,6 +1,7 @@
 import 'package:args/args.dart';
 
 import 'l10n_init.dart';
+import 'sort.dart';
 import 'unused.dart';
 import 'version.dart';
 
@@ -71,7 +72,7 @@ void main(List<String> arguments) {
     } else if (results.wasParsed(verboseFlag)) {
       verbose = true;
     } else if (results.wasParsed(sortFlag)) {
-      // TODO(masreplay): Implement sort functionality.
+      sortArbFileAlphabetically();
     } else if (results.wasParsed(initFlag)) {
       initL10nCommand();
     } else if (results.wasParsed(unusedFlag)) {

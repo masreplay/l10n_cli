@@ -1,1 +1,12 @@
 include: package:lints/recommended.yaml
+
+linter:
+  rules:
+    unawaited_futures: true
+
+analyzer:
+  errors:
+    unawaited_futures: error
+
+  plugins:
+    - custom_lint

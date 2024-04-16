@@ -13,8 +13,6 @@ dependencies:
   intl: any
   pubspec_parse: ^1.2.3
   yaml: ^3.1.2
-  flutter_tools:
-    path: /opt/homebrew/Caskroom/flutter/3.0.0/flutter/packages/flutter_tools
   file: ^7.0.0
   logger: ^2.2.0
   path: ^1.9.0

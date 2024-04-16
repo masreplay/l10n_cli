@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:logger/logger.dart';
 import 'package:yaml/yaml.dart';
 
 class LocalizationOptions {
@@ -176,7 +175,6 @@ class LocalizationOptions {
   /// but is empty.
   factory LocalizationOptions.parseFromYAML({
     required File file,
-    required Logger logger,
     required String defaultArbDir,
   }) {
     final String contents = file.readAsStringSync();
@@ -187,37 +185,37 @@ class LocalizationOptions {
     try {
       yamlNode = loadYamlNode(file.readAsStringSync());
     } on YamlException catch (err) {
-      logger.e(err.message);
+      print(err.message);
       throw Exception();
     }
 
     if (yamlNode is! YamlMap) {
-      logger.e('Expected ${file.path} to contain a map, instead was $yamlNode');
+      print('Expected ${file.path} to contain a map, instead was $yamlNode');
       throw Exception();
     }
     return LocalizationOptions(
-      arbDir: _tryReadUri(yamlNode, arbDirKey, logger)?.path ?? defaultArbDir,
-      outputDir: _tryReadUri(yamlNode, outputDirKey, logger)?.path,
-      templateArbFile: _tryReadUri(yamlNode, templateArbFileKey, logger)?.path,
+      arbDir: _tryReadUri(yamlNode, arbDirKey)?.path ?? defaultArbDir,
+      outputDir: _tryReadUri(yamlNode, outputDirKey)?.path,
+      templateArbFile: _tryReadUri(yamlNode, templateArbFileKey)?.path,
       outputLocalizationFile:
-          _tryReadUri(yamlNode, outputLocalizationFileKey, logger)?.path,
+          _tryReadUri(yamlNode, outputLocalizationFileKey)?.path,
       untranslatedMessagesFile:
-          _tryReadUri(yamlNode, untranslatedMessagesFileKey, logger)?.path,
-      outputClass: _tryReadString(yamlNode, outputClassKey, logger),
-      header: _tryReadString(yamlNode, headerKey, logger),
-      headerFile: _tryReadUri(yamlNode, headerFileKey, logger)?.path,
-      useDeferredLoading: _tryReadBool(yamlNode, useDeferredLoadingKey, logger),
+          _tryReadUri(yamlNode, untranslatedMessagesFileKey)?.path,
+      outputClass: _tryReadString(yamlNode, outputClassKey),
+      header: _tryReadString(yamlNode, headerKey),
+      headerFile: _tryReadUri(yamlNode, headerFileKey)?.path,
+      useDeferredLoading: _tryReadBool(yamlNode, useDeferredLoadingKey),
       preferredSupportedLocales:
-          _tryReadStringList(yamlNode, preferredSupportedLocalesKey, logger),
-      syntheticPackage: _tryReadBool(yamlNode, syntheticPackageKey, logger),
+          _tryReadStringList(yamlNode, preferredSupportedLocalesKey),
+      syntheticPackage: _tryReadBool(yamlNode, syntheticPackageKey),
       requiredResourceAttributes:
-          _tryReadBool(yamlNode, requiredResourceAttributesKey, logger),
-      nullableGetter: _tryReadBool(yamlNode, nullableGetterKey, logger),
-      format: _tryReadBool(yamlNode, formatKey, logger),
-      useEscaping: _tryReadBool(yamlNode, useEscapingKey, logger),
-      suppressWarnings: _tryReadBool(yamlNode, suppressWarningsKey, logger),
-      relaxSyntax: _tryReadBool(yamlNode, relaxSyntaxKey, logger),
-      useNamedParameters: _tryReadBool(yamlNode, useNamedParametersKey, logger),
+          _tryReadBool(yamlNode, requiredResourceAttributesKey),
+      nullableGetter: _tryReadBool(yamlNode, nullableGetterKey),
+      format: _tryReadBool(yamlNode, formatKey),
+      useEscaping: _tryReadBool(yamlNode, useEscapingKey),
+      suppressWarnings: _tryReadBool(yamlNode, suppressWarningsKey),
+      relaxSyntax: _tryReadBool(yamlNode, relaxSyntaxKey),
+      useNamedParameters: _tryReadBool(yamlNode, useNamedParametersKey),
     );
   }
 
@@ -246,32 +244,32 @@ $useNamedParametersKey: $useNamedParameters''';
 }
 
 // Try to read a `bool` value or null from `yamlMap`, otherwise throw.
-bool? _tryReadBool(YamlMap yamlMap, String key, Logger logger) {
+bool? _tryReadBool(YamlMap yamlMap, String key) {
   final Object? value = yamlMap[key];
   if (value == null) {
     return null;
   }
   if (value is! bool) {
-    logger.e('Expected "$key" to have a bool value, instead was "$value"');
+    print('Expected "$key" to have a bool value, instead was "$value"');
     throw Exception();
   }
   return value;
 }
 
 // Try to read a `String` value or null from `yamlMap`, otherwise throw.
-String? _tryReadString(YamlMap yamlMap, String key, Logger logger) {
+String? _tryReadString(YamlMap yamlMap, String key) {
   final Object? value = yamlMap[key];
   if (value == null) {
     return null;
   }
   if (value is! String) {
-    logger.e('Expected "$key" to have a String value, instead was "$value"');
+    print('Expected "$key" to have a String value, instead was "$value"');
     throw Exception();
   }
   return value;
 }
 
-List<String>? _tryReadStringList(YamlMap yamlMap, String key, Logger logger) {
+List<String>? _tryReadStringList(YamlMap yamlMap, String key) {
   final Object? value = yamlMap[key];
   if (value == null) {
     return null;
@@ -282,19 +280,19 @@ List<String>? _tryReadStringList(YamlMap yamlMap, String key, Logger logger) {
   if (value is Iterable) {
     return value.map((dynamic e) => e.toString()).toList();
   }
-  logger.e('"$value" must be String or List.');
+  print('"$value" must be String or List.');
   throw Exception();
 }
 
 // Try to read a valid `Uri` or null from `yamlMap`, otherwise throw.
-Uri? _tryReadUri(YamlMap yamlMap, String key, Logger logger) {
-  final String? value = _tryReadString(yamlMap, key, logger);
+Uri? _tryReadUri(YamlMap yamlMap, String key) {
+  final String? value = _tryReadString(yamlMap, key);
   if (value == null) {
     return null;
   }
   final Uri? uri = Uri.tryParse(value);
   if (uri == null) {
-    logger.e('"$value" must be a relative file URI');
+    print('"$value" must be a relative file URI');
   }
   return uri;
 }
