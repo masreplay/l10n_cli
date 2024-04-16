@@ -146,58 +146,103 @@ class LocalizationOptions {
   ///
   /// Defaults to `false`.
   final bool useNamedParameters;
-}
 
-/// Parse the localizations configuration options from [file].
-///
-/// Throws [Exception] if any of the contents are invalid. Returns a
-/// [LocalizationOptions] with all fields as `null` if the config file exists
-/// but is empty.
-LocalizationOptions parseLocalizationsOptionsFromYAML({
-  required File file,
-  required Logger logger,
-  required String defaultArbDir,
-}) {
-  final String contents = file.readAsStringSync();
-  if (contents.trim().isEmpty) {
-    return LocalizationOptions(arbDir: defaultArbDir);
-  }
-  final YamlNode yamlNode;
-  try {
-    yamlNode = loadYamlNode(file.readAsStringSync());
-  } on YamlException catch (err) {
-    logger.e(err.message);
-    throw Exception();
+  static const String arbDirKey = 'arb-dir';
+  static const String outputDirKey = 'output-dir';
+  static const String templateArbFileKey = 'template-arb-file';
+  static const String outputLocalizationFileKey = 'output-localization-file';
+  static const String untranslatedMessagesFileKey =
+      'untranslated-messages-file';
+  static const String outputClassKey = 'output-class';
+  static const String headerKey = 'header';
+  static const String headerFileKey = 'header-file';
+  static const String useDeferredLoadingKey = 'use-deferred-loading';
+  static const String preferredSupportedLocalesKey =
+      'preferred-supported-locales';
+  static const String syntheticPackageKey = 'synthetic-package';
+  static const String requiredResourceAttributesKey =
+      'required-resource-attributes';
+  static const String nullableGetterKey = 'nullable-getter';
+  static const String formatKey = 'format';
+  static const String useEscapingKey = 'use-escaping';
+  static const String suppressWarningsKey = 'suppress-warnings';
+  static const String relaxSyntaxKey = 'relax-syntax';
+  static const String useNamedParametersKey = 'use-named-parameters';
+
+  /// Parse the localizations configuration options from [file].
+  ///
+  /// Throws [Exception] if any of the contents are invalid. Returns a
+  /// [LocalizationOptions] with all fields as `null` if the config file exists
+  /// but is empty.
+  factory LocalizationOptions.parseFromYAML({
+    required File file,
+    required Logger logger,
+    required String defaultArbDir,
+  }) {
+    final String contents = file.readAsStringSync();
+    if (contents.trim().isEmpty) {
+      return LocalizationOptions(arbDir: defaultArbDir);
+    }
+    final YamlNode yamlNode;
+    try {
+      yamlNode = loadYamlNode(file.readAsStringSync());
+    } on YamlException catch (err) {
+      logger.e(err.message);
+      throw Exception();
+    }
+
+    if (yamlNode is! YamlMap) {
+      logger.e('Expected ${file.path} to contain a map, instead was $yamlNode');
+      throw Exception();
+    }
+    return LocalizationOptions(
+      arbDir: _tryReadUri(yamlNode, arbDirKey, logger)?.path ?? defaultArbDir,
+      outputDir: _tryReadUri(yamlNode, outputDirKey, logger)?.path,
+      templateArbFile: _tryReadUri(yamlNode, templateArbFileKey, logger)?.path,
+      outputLocalizationFile:
+          _tryReadUri(yamlNode, outputLocalizationFileKey, logger)?.path,
+      untranslatedMessagesFile:
+          _tryReadUri(yamlNode, untranslatedMessagesFileKey, logger)?.path,
+      outputClass: _tryReadString(yamlNode, outputClassKey, logger),
+      header: _tryReadString(yamlNode, headerKey, logger),
+      headerFile: _tryReadUri(yamlNode, headerFileKey, logger)?.path,
+      useDeferredLoading: _tryReadBool(yamlNode, useDeferredLoadingKey, logger),
+      preferredSupportedLocales:
+          _tryReadStringList(yamlNode, preferredSupportedLocalesKey, logger),
+      syntheticPackage: _tryReadBool(yamlNode, syntheticPackageKey, logger),
+      requiredResourceAttributes:
+          _tryReadBool(yamlNode, requiredResourceAttributesKey, logger),
+      nullableGetter: _tryReadBool(yamlNode, nullableGetterKey, logger),
+      format: _tryReadBool(yamlNode, formatKey, logger),
+      useEscaping: _tryReadBool(yamlNode, useEscapingKey, logger),
+      suppressWarnings: _tryReadBool(yamlNode, suppressWarningsKey, logger),
+      relaxSyntax: _tryReadBool(yamlNode, relaxSyntaxKey, logger),
+      useNamedParameters: _tryReadBool(yamlNode, useNamedParametersKey, logger),
+    );
   }
 
-  if (yamlNode is! YamlMap) {
-    logger.e('Expected ${file.path} to contain a map, instead was $yamlNode');
-    throw Exception();
+  @override
+  String toString() {
+    return '''
+$arbDirKey: $arbDir
+$outputDirKey: $outputDir
+$templateArbFileKey: $templateArbFile
+$outputLocalizationFileKey: $outputLocalizationFile
+$untranslatedMessagesFileKey: $untranslatedMessagesFile
+$outputClassKey: $outputClass
+$preferredSupportedLocalesKey: $preferredSupportedLocales
+$headerKey: $header
+$headerFileKey: $headerFile
+$useDeferredLoadingKey: $useDeferredLoading
+$syntheticPackageKey: $syntheticPackage
+$requiredResourceAttributesKey: $requiredResourceAttributes
+$nullableGetterKey: $nullableGetter
+$formatKey: $format
+$useEscapingKey: $useEscaping
+$suppressWarningsKey: $suppressWarnings
+$relaxSyntaxKey: $relaxSyntax
+$useNamedParametersKey: $useNamedParameters''';
   }
-  return LocalizationOptions(
-    arbDir: _tryReadUri(yamlNode, 'arb-dir', logger)?.path ?? defaultArbDir,
-    outputDir: _tryReadUri(yamlNode, 'output-dir', logger)?.path,
-    templateArbFile: _tryReadUri(yamlNode, 'template-arb-file', logger)?.path,
-    outputLocalizationFile:
-        _tryReadUri(yamlNode, 'output-localization-file', logger)?.path,
-    untranslatedMessagesFile:
-        _tryReadUri(yamlNode, 'untranslated-messages-file', logger)?.path,
-    outputClass: _tryReadString(yamlNode, 'output-class', logger),
-    header: _tryReadString(yamlNode, 'header', logger),
-    headerFile: _tryReadUri(yamlNode, 'header-file', logger)?.path,
-    useDeferredLoading: _tryReadBool(yamlNode, 'use-deferred-loading', logger),
-    preferredSupportedLocales:
-        _tryReadStringList(yamlNode, 'preferred-supported-locales', logger),
-    syntheticPackage: _tryReadBool(yamlNode, 'synthetic-package', logger),
-    requiredResourceAttributes:
-        _tryReadBool(yamlNode, 'required-resource-attributes', logger),
-    nullableGetter: _tryReadBool(yamlNode, 'nullable-getter', logger),
-    format: _tryReadBool(yamlNode, 'format', logger),
-    useEscaping: _tryReadBool(yamlNode, 'use-escaping', logger),
-    suppressWarnings: _tryReadBool(yamlNode, 'suppress-warnings', logger),
-    relaxSyntax: _tryReadBool(yamlNode, 'relax-syntax', logger),
-    useNamedParameters: _tryReadBool(yamlNode, 'use-named-parameters', logger),
-  );
 }
 
 // Try to read a `bool` value or null from `yamlMap`, otherwise throw.

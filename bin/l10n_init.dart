@@ -1,70 +1,44 @@
 import 'dart:io';
 
 import 'package:logger/logger.dart';
-
-import 'l10n_yaml/l10n_paths.dart';
-import 'l10n_yaml/localization_utils.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
+import 'l10n_yaml/l10n_options.dart';
+import 'l10n_yaml/l10n_paths.dart';
 import 'l10n_yaml/pubspec_l10n_config.dart';
+import 'l10n_yaml/utils/configure_l10n.dart';
+import 'l10n_yaml/utils/configure_l10n_options.dart';
 
 final logger = Logger();
 
-Future<bool> isL10nConfigured() async {
+Future<L10nConfig> checkL10nConfig() async {
   final pubspecFile = File(pubspecYamlPath);
 
   if (!await pubspecFile.exists()) {
-    print("pubspec.yaml file not found");
-    return false;
+    throw Exception("pubspec.yaml file not found");
   }
 
   final pubspec = Pubspec.parse(await pubspecFile.readAsString());
 
-  if (pubspec.flutter == null) {
-    print("pubspec: flutter section not found in pubspec.yaml");
-    return false;
-  }
-
-  final pubspecL10nConfig = PubspecL10nConfig.parse(pubspec);
-
-  if (!pubspecL10nConfig.shouldGenerate) {
-    print("l10n: generate flag not found in pubspec.yaml");
-    return false;
-  }
-
-  if (!pubspecL10nConfig.hasIntlPackage) {
-    print("l10n: intl package not found in pubspec.yaml");
-    return false;
-  }
-
-  final l10nYamlFile = File(l10nYamlPath);
-
-  if (!await l10nYamlFile.exists()) {
-    print("l10n.yaml file not found");
-    return false;
-  }
-
-  return true;
+  return L10nConfig.parse(pubspec);
 }
 
 Future<void> initL10nCommand() async {
-  final configured = await isL10nConfigured();
-
-  if (configured) {
-    print("l10n: already configured");
-
-    return;
+  final config = await checkL10nConfig();
+  print(config);
+  if (config.isConfigured) {
+    print("L10n configuration is correctly");
+  } else {
+    configureL10n(config);
   }
 
-  final l10nYamlFile = File(l10nYamlPath);
-
-  final l10nOptions = parseLocalizationsOptionsFromYAML(
-    file: l10nYamlFile,
+  final options = LocalizationOptions.parseFromYAML(
+    file: File(l10nYamlPath),
     logger: logger,
-    defaultArbDir: defaultArbPath,
+    defaultArbDir: defaultArbDir,
   );
 
-  print(l10nOptions);
+  configureL10nOptions(options);
 }
 
 void main(List<String> args) {
