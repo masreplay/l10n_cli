@@ -1,6 +1,7 @@
 name: l10n_cli
 description: A sample command-line application with basic argument parsing.
 version: 0.0.1
+publish_to: "none"
 # repository: https://github.com/my_org/my_repo
 
 environment:
@@ -9,8 +10,13 @@ environment:
 # Add regular dependencies here.
 dependencies:
   args: ^2.4.2
+  intl: any
   pubspec_parse: ^1.2.3
   yaml: ^3.1.2
+  flutter_tools:
+    path: /opt/homebrew/Caskroom/flutter/3.0.0/flutter/packages/flutter_tools
+  file: ^7.0.0
+  logger: ^2.2.0
 
 dev_dependencies:
   lints: ^3.0.0

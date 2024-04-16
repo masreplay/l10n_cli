@@ -1,97 +1,101 @@
 import 'dart:io';
-import 'package:yaml/yaml.dart';
+
+import 'package:logger/logger.dart';
+
+import 'tools/parse.dart';
 import 'package:pubspec_parse/pubspec_parse.dart';
 
-/// Adding your own localized messages
-/// #
-/// After adding the flutter_localizations package, you can configure localization. To add localized text to your application, complete the following instructions:
+final logger = Logger();
 
-/// Add the intl package as a dependency, pulling in the version pinned by flutter_localizations:
+const String defaultL10nYamlPath = 'l10n.yaml';
+const String defaultArbPath = 'lib/l10n';
 
-/// $ flutter pub add intl:any
-/// content_copy
-/// Open the pubspec.yaml file and enable the generate flag. This flag is found in the flutter section in the pubspec file.
+Future<bool> isL10nConfigured() async {
+  final pubspecFile = File('pubspec.yaml');
 
-/// # The following section is specific to Flutter.
-/// flutter:
-///   generate: true # Add this line
-/// content_copy
-/// Add a new yaml file to the root directory of the Flutter project. Name this file l10n.yaml and include following content:
+  if (!await pubspecFile.exists()) {
+    print("pubspec.yaml file not found");
+    return false;
+  }
 
-/// arb-dir: lib/l10n
-/// template-arb-file: app_en.arb
-/// output-localization-file: app_localizations.dart
-/// content_copy
-/// This file configures the localization tool. In this example, you've done the following:
+  final pubspec = Pubspec.parse(await pubspecFile.readAsString());
 
-/// Put the App Resource Bundle (.arb) input files in ${FLUTTER_PROJECT}/lib/l10n. The .arb provide localization resources for your app.
-/// Set the English template as app_en.arb.
-/// Told Flutter to generate localizations in the app_localizations.dart file.
-/// In ${FLUTTER_PROJECT}/lib/l10n, add the app_en.arb template file. For example:
+  if (pubspec.flutter == null) {
+    print("pubspec: flutter section not found in pubspec.yaml");
+    return false;
+  }
 
-/// {
-///   "helloWorld": "Hello World!",
-///   "@helloWorld": {
-///     "description": "The conventional newborn programmer greeting"
-///   }
-/// }
-/// content_copy
-/// Add another bundle file called app_es.arb in the same directory. In this file, add the Spanish translation of the same message.
+  final pubspecL10nConfig = parsePubspecL10nConfig(pubspec);
 
-/// {
-///     "helloWorld": "¡Hola Mundo!"
-/// }
-/// content_copy
-/// Now, run flutter pub get or flutter run and codegen takes place automatically. You should find generated files in ${FLUTTER_PROJECT}/.dart_tool/flutter_gen/gen_l10n. Alternatively, you can also run flutter gen-l10n to generate the same files without running the app.
+  if (!pubspecL10nConfig.shouldGenerate) {
+    print("l10n: generate flag not found in pubspec.yaml");
+    return false;
+  }
 
-/// Add the import statement on app_localizations.dart and AppLocalizations.delegate in your call to the constructor for MaterialApp:
+  if (!pubspecL10nConfig.hasIntlPackage) {
+    print("l10n: intl package not found in pubspec.yaml");
+    return false;
+  }
 
-/// import 'package:flutter_gen/gen_l10n/app_localizations.dart';
-/// content_copy
-/// return const MaterialApp(
-///   title: 'Localizations Sample App',
-///   localizationsDelegates: [
-///     AppLocalizations.delegate, /// Add this line
-///     GlobalMaterialLocalizations.delegate,
-///     GlobalWidgetsLocalizations.delegate,
-///     GlobalCupertinoLocalizations.delegate,
-///   ],
-///   supportedLocales: [
-///     Locale('en'), /// English
-///     Locale('es'), /// Spanish
-///   ],
-///   home: MyHomePage(),
-/// );
-/// content_copy
-/// The AppLocalizations class also provides auto-generated localizationsDelegates and supportedLocales lists. You can use these instead of providing them manually.
+  final l10nYamlFile = File(defaultL10nYamlPath);
 
-/// const MaterialApp(
-///   title: 'Localizations Sample App',
-///   localizationsDelegates: AppLocalizations.localizationsDelegates,
-///   supportedLocales: AppLocalizations.supportedLocales,
-/// );
-/// content_copy
-/// Once the Material app has started, you can use AppLocalizations anywhere in your app:
+  if (!await l10nYamlFile.exists()) {
+    print("l10n.yaml file not found");
+    return false;
+  }
 
-/// appBar: AppBar(
-///   /// The [AppBar] title text should update its message
-///   /// according to the system locale of the target platform.
-///   /// Switching between English and Spanish locales should
-///   /// cause this text to update.
-///   title: Text(AppLocalizations.of(context)!.helloWorld),
-/// ),
-/// content_copy
-/// Note
-
-/// https://docs.flutter.dev/ui/accessibility-and-internationalization/internationalization#adding-your-own-localized-messages
-Future<void> initL10nCommand() async {
-  final pubspec = File('pubspec.yaml');
-  if (!await pubspec.exists()) return;
-
-  final content = pubspec.readAsStringSync();
-  final pubspecYaml = Pubspec.parse(content);
-
-  print(pubspecYaml.flutter);
+  return true;
 }
 
+Future<void> initL10nCommand() async {
+  final configured = await isL10nConfigured();
 
+  if (configured) {
+    print("l10n: already configured");
+
+    return;
+  }
+
+  final l10nYamlFile = File('l10n.yaml');
+
+  if (!await l10nYamlFile.exists()) {
+    print("l10n.yaml file not found");
+    return;
+  }
+
+  final options = parseLocalizationsOptionsFromYAML(
+    file: l10nYamlFile,
+    logger: logger,
+    defaultArbDir: defaultArbPath,
+  );
+
+  print(options);
+}
+
+void main(List<String> args) {
+  initL10nCommand();
+}
+
+class PubspecL10nConfig {
+  // generate flag and intl package
+  final bool? generate;
+  final bool? intlPackageExists;
+
+  const PubspecL10nConfig({
+    required this.generate,
+    required this.intlPackageExists,
+  });
+
+  bool get shouldGenerate => generate ?? false;
+  bool get hasIntlPackage => intlPackageExists ?? false;
+}
+
+PubspecL10nConfig parsePubspecL10nConfig(Pubspec pubspec) {
+  final generate = pubspec.flutter!['generate'];
+  final intlPackageExists = pubspec.dependencies.containsKey('intl');
+
+  return PubspecL10nConfig(
+    generate: generate,
+    intlPackageExists: intlPackageExists,
+  );
+}
